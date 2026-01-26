@@ -1,0 +1,14 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Secrets
+secrets/
+*.env
+
+# OS/IDE
+.vscode/
+.DS_Store
+
+gmail_token*.json    
