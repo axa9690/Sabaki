@@ -1,0 +1,67 @@
+# Sabaki Email — AI Job Inbox Labeling Agent (Gmail + LLM)
+
+An AI-powered Gmail agent that **auto-labels job-application emails** into clear stages (APPLIED, ASSESSMENTS, IN_PROCESS, INTERVIEWS, REJECTED, OTP_SECURITY, etc.).  
+Built with **Python**, **Gmail API (OAuth)**, **rule-based short-circuiting**, and **LLM + Pydantic validation** (Ollama local for v1).
+
+---
+
+## Why this project
+When you’re applying to many jobs, the inbox becomes noise. This tool:
+- Reads recent emails from a dedicated job-search Gmail account
+- Classifies each email into a job stage
+- Applies the correct Gmail label automatically
+- Marks certain “low value” emails (e.g., APPLIED / REJECTED) as read so you don’t waste time
+
+This is designed as a **real AI application**, not a simple API wrapper:
+- Hybrid pipeline (fast rules + LLM fallback)
+- Strict structured outputs (Pydantic)
+- Safe retries when the model returns invalid JSON
+- Gmail labeling + processed skipping for efficiency
+
+---
+
+## Current Features (v1)
+### ✅ Job labels supported
+- `APPLIED`
+- `ASSESSMENTS`
+- `IN_PROCESS`
+- `INTERVIEWS`
+- `REJECTED`
+- `OTP_SECURITY` (one-time passcodes / verification codes)
+- `RECOMMENDATIONS` (referrals, reference requests, “you were referred”)
+- `JOB_ALERTS` (career portal alerts / job matches)
+- `ADVERTISEMENTS` (non-job noise / promotions)
+
+### ✅ Smart behavior
+- **Rule short-circuit** for obvious patterns (fast + saves LLM calls)
+- **LLM fallback** (Ollama) for ambiguous emails
+- **Schema validation** using Pydantic (no random outputs)
+- **Skip already processed emails** using a `PROCESSED` label
+- **Mark as read** automatically for `APPLIED` and `REJECTED`
+
+---
+
+## Architecture (high-level)
+1. Fetch recent Gmail email metadata/snippets
+2. If email already has `PROCESSED` → skip
+3. Run fast regex rules → label if confident
+4. Else send to LLM → receive JSON → validate with Pydantic
+5. Apply Gmail label + add `PROCESSED`
+6. If label is APPLIED/REJECTED → mark as read
+
+---
+
+## Tech Stack
+- Python 3.11
+- Gmail API (OAuth 2.0)
+- Ollama (local LLM for v1)
+- Pydantic (structured outputs + validation)
+- Docker-ready for future serverless deployment
+
+---
+
+## Setup (Local)
+### 1) Create & activate venv
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
