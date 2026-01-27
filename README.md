@@ -66,11 +66,11 @@ This is designed as a **real AI application**, not a simple API wrapper:
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 
-**### 2) Install Dependencies**
+### 2) Install Dependencies
 ```powershell
 pip install -r requirements
 
-**### 3) Gmail OAuth setup**
+### 3) Gmail OAuth setup
 
 You must create a Google Cloud OAuth client and generate a token locally.
 
