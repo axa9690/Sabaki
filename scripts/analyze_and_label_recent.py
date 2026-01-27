@@ -5,11 +5,11 @@ import os
 import re
 
 from email_agent.config import JOB_LABELS, PROCESSED_LABEL
+from email_agent.gmail import labels
 from email_agent.gmail.fetch_meta import fetch_recent_email_meta
 from email_agent.gmail.labels import ensure_labels, apply_labels
 from email_agent.gmail.service import build_gmail_service
 
-# IMPORTANT: adjust this import if your function name differs
 from email_agent.pipeline.analyzer import analyze_email_with_ollama
 from email_agent.llm.ollama_client import OllamaClient
 from email_agent.schemas import JobLabel, EmailAnalysis
@@ -62,7 +62,7 @@ def short_circuit_label(subject: str, snippet: str, from_email: str) -> JobLabel
 
 
 def main():
-    max_emails = int(os.getenv("MAX_EMAILS", "5"))
+    max_emails = int(os.getenv("MAX_EMAILS", "1"))
 
     service = build_gmail_service()
 
@@ -101,7 +101,13 @@ def main():
             )
             final_label = analysis.label
             reasoning = analysis.reasoning_brief
-
+        
+        if final_label == JobLabel.OTHERS:
+            apply_labels(service, e.message_id, add_label_ids=[processed_label_id])
+            print(f"⚠️ Unclassified (PROCESSED only): {e.subject[:70]}")
+            skipped += 1
+            continue
+        
         add_ids = [label_ids[final_label.value], processed_label_id]
 
         remove_ids = []

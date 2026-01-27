@@ -20,6 +20,8 @@ RECOMMENDATIONS
 JOB_ALERTS
 ADVERTISEMENTS
 
+If UNSURE about the label, choose OTHERS
+
 You MUST choose "urgency" from EXACTLY this list:
 low
 medium

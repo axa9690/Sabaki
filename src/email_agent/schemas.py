@@ -14,6 +14,7 @@ class JobLabel(str, Enum):
     RECOMMENDATIONS = "RECOMMENDATIONS"
     JOB_ALERTS = "JOB_ALERTS"
     ADVERTISEMENTS = "ADVERTISEMENTS"
+    OTHERS = "OTHERS"
 
 
 class Urgency(str, Enum):
