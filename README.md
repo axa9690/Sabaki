@@ -5,7 +5,7 @@ Built with **Python**, **Gmail API (OAuth)**, **rule-based short-circuiting**, a
 
 ---
 
-## Why this project
+## Why this project is GREAT
 When you’re applying to many jobs, the inbox becomes noise. This tool:
 - Reads recent emails from a dedicated job-search Gmail account
 - Classifies each email into a job stage
