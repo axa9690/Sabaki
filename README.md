@@ -69,6 +69,7 @@ python -m venv .venv
 ### 2) Install Dependencies
 ```powershell
 pip install -r requirements
+```
 
 ### 3) Gmail OAuth setup
 
