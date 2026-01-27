@@ -116,9 +116,10 @@ Expected output:
  - Batch classification to reduce latency + cost
 
 ## Demo
-Add a screenshot/GIF here of:
-
+### Terminal Output
 <img width="2274" height="244" alt="image" src="https://github.com/user-attachments/assets/7c606fee-1381-43c2-9bf6-c1cd99fa11ec" />
+
+### GMail Labels
 <img width="2230" height="1051" alt="image" src="https://github.com/user-attachments/assets/41f234f6-ddce-4a11-bfc7-b647ebf62f51" />
 
 ## Author
