@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from email.mime import text
 import os
 import re
 
