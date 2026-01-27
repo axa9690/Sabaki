@@ -1,4 +1,4 @@
-# Sabaki Email — AI Job Inbox Labeling Agent (Gmail + LLM)
+# Project Sabaki — AI Job Inbox Labeling Agent (Gmail + LLM)
 
 An AI-powered Gmail agent that **auto-labels job-application emails** into clear stages (APPLIED, ASSESSMENTS, IN_PROCESS, INTERVIEWS, REJECTED, OTP_SECURITY, etc.).  
 Built with **Python**, **Gmail API (OAuth)**, **rule-based short-circuiting**, and **LLM + Pydantic validation** (Ollama local for v1).
