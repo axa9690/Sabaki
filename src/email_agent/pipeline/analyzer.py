@@ -5,6 +5,7 @@ from typing import Optional
 
 from email_agent.schemas import EmailAnalysis
 from email_agent.llm.ollama_client import OllamaClient
+from email_agent.text.normalize import normalize_email_text 
 
 SYSTEM_PROMPT = """You are an AI email assistant for a job-application inbox.
 You MUST output ONLY valid JSON. No markdown. No extra text.
@@ -19,11 +20,11 @@ OTP_SECURITY
 RECOMMENDATIONS
 JOB_ALERTS
 ADVERTISEMENTS
-
-If UNSURE about the label, choose OTHERS
+OTHERS
 
 Important:
-- Choose OTHERS ONLY when the email is clearly unrelated to job search (personal/test/random).
+- Choose OTHERS when you cannot confidently map to a job pipeline label
+  or the email is unrelated to job search.
 
 You MUST choose "urgency" from EXACTLY this list:
 low
@@ -78,13 +79,20 @@ def analyze_email_with_ollama(
     client: OllamaClient,
     max_retries: int = 2,
 ) -> EmailAnalysis:
+    
+    # ✅ Normalize + cap before sending to LLM
+    normalized = normalize_email_text(
+        subject=subject,
+        snippet=snippet,
+        max_chars=6000,
+    )
 
     user_prompt = f"""Classify this email for a job-application inbox.
 
 From: {from_email}
 Date: {date}
 Subject: {subject}
-Snippet: {snippet}
+Snippet: {normalized}
 
 Return ONLY JSON with EXACT keys: label, urgency, reasoning_brief, needs_reply.
 The key must be "label" (NOT category).

@@ -14,6 +14,7 @@ from email_agent.gmail.fetch_body import fetch_email_body_text
 from email_agent.pipeline.analyzer import analyze_email_with_ollama
 from email_agent.llm.ollama_client import OllamaClient
 from email_agent.schemas import JobLabel, EmailAnalysis
+from email_agent.text.normalize import normalize_email_text
 
 
 def short_circuit_label(subject: str, snippet: str, from_email: str) -> JobLabel | None:
@@ -62,8 +63,6 @@ def short_circuit_label(subject: str, snippet: str, from_email: str) -> JobLabel
     if re.search(r"\brecommended for you\b|\byou might be interested\b|\bsuggested (role|job|position)\b|\bsimilar jobs\b", text):
         return JobLabel.RECOMMENDATIONS
 
-    
-
     return None
 
 def needs_body_fetch(subject: str, snippet: str) -> bool:
@@ -78,7 +77,7 @@ def debug_others(email, combined_text):
     print(f"From   : {email.from_email}")
     print(f"Subject: {email.subject}")
     print("----- TEXT SENT TO CLASSIFIER -----")
-    print(combined_text)  # cap to avoid terminal spam
+    print(combined_text)  
     print("=" * 80 + "\n")
 
 
@@ -147,7 +146,7 @@ def main():
         add_ids = [label_ids[final_label.value], processed_label_id]
 
         combined_text = f"{e.snippet}".lower()
-        debug_others(e, combined_text)
+        #debug_others(e, combined_text)
             
             
         remove_ids = []
