@@ -1,22 +1,29 @@
-# Project Sabaki — AI Job Inbox Labeling Agent (Gmail + LLM)
+# Sabaki — AI Job Inbox Labeling Agent (Gmail + LLM)
 
 An AI-powered Gmail agent that **auto-labels job-application emails** into clear stages (APPLIED, ASSESSMENTS, IN_PROCESS, INTERVIEWS, REJECTED, OTP_SECURITY, etc.).  
 Built with **Python**, **Gmail API (OAuth)**, **rule-based short-circuiting**, and **LLM + Pydantic validation** (Ollama local for v1).
 
 ---
 
-## Why this project is GREAT
-When you’re applying to many jobs, the inbox becomes noise. This tool:
-- Reads recent emails from a dedicated job-search Gmail account
-- Classifies each email into a job stage
-- Applies the correct Gmail label automatically
-- Marks certain “low value” emails (e.g., APPLIED / REJECTED) as read so you don’t waste time
+## Why This Project Matters
 
-This is designed as a **real AI application**, not a simple API wrapper:
-- Hybrid pipeline (fast rules + LLM fallback)
-- Strict structured outputs (Pydantic)
-- Safe retries when the model returns invalid JSON
-- Gmail labeling + processed skipping for efficiency
+When you’re actively applying to jobs, your inbox quickly turns into noise. Sabaki solves this by acting as a **personal AI inbox agent** that:
+
+- Reads recent emails from a dedicated job-search Gmail account
+- Classifies each email into a clear job pipeline stage
+- Applies the correct Gmail label automatically
+- Marks low-value emails (e.g., APPLIED / REJECTED) as read so you focus only on what matters
+
+This is not a toy script or a simple API wrapper — it is designed as a **real AI application** with reliability, cost control, and safety in mind.
+
+### What Makes This a Real AI Agent
+
+- **Hybrid pipeline**: fast regex rules first, LLM only when needed
+- **Cost-aware design**: avoids unnecessary LLM calls
+- **Strict structured outputs** using Pydantic (no hallucinated labels)
+- **Safe retries** when model output is invalid
+- **Stateful processing** using a PROCESSED label to avoid rework
+- **HTML email normalization** before LLM inference to improve accuracy and performance
 
 ---
 
@@ -39,24 +46,48 @@ This is designed as a **real AI application**, not a simple API wrapper:
 - **Skip already processed emails** using a `PROCESSED` label
 - **Mark as read** automatically for `APPLIED` and `REJECTED`
 
+✅ Reliability & Accuracy Improvements
+- Two-stage email fetch (metadata first, full body only when required)
+- HTML email body normalization before rule checks and LLM inference
+- Truncated and cleaned prompts to prevent slow or unstable model calls
+- Debug logging for OTHERS classifications to continuously improve rules
+
 ---
 
-## Architecture (high-level)
-1. Fetch recent Gmail email metadata/snippets
-2. If email already has `PROCESSED` → skip
-3. Run fast regex rules → label if confident
-4. Else send to LLM → receive JSON → validate with Pydantic
-5. Apply Gmail label + add `PROCESSED`
-6. If label is APPLIED/REJECTED → mark as read
+## Architecture (High-Level)
+
+1. Fetch recent Gmail email metadata (subject, sender, snippet)
+2. Skip emails already marked with PROCESSED
+3. Run fast regex-based rules to classify obvious cases
+4. Fetch and normalize full email body only for uncertain cases
+5. Re-run rules on normalized content
+6. Fall back to LLM classification when needed
+7. Validate LLM output using Pydantic schema
+8. Apply Gmail label + PROCESSED
+9. Mark emails as read for APPLIED / REJECTED
+
+---
+
+## Design Philosophy
+
+Sabaki is built with the mindset of a production AI system:
+
+- **Rules before models** for speed, cost, and determinism
+- **LLMs as a reasoning fallback**, not a first step
+- **Structured outputs over free-text generation**
+- **Fail-safe defaults** (OTHERS + PROCESSED) instead of crashes
+- **Extensible architecture** for cloud and serverless deployment
 
 ---
 
 ## Tech Stack
+
 - Python 3.11
 - Gmail API (OAuth 2.0)
-- Ollama (local LLM for v1)
-- Pydantic (structured outputs + validation)
-- Docker-ready for future serverless deployment
+- Ollama (local LLM inference for v1)
+- Pydantic (structured output validation)
+- Regex-based rules engine
+- Docker-ready architecture (for future AWS Lambda deployment)
 
 ---
 
@@ -122,7 +153,13 @@ Expected output:
 ### GMail Labels
 <img width="2230" height="1051" alt="image" src="https://github.com/user-attachments/assets/41f234f6-ddce-4a11-bfc7-b647ebf62f51" />
 
+
 ## Author
 
-#### Anand Manohar Agnihotram
-AI Application Engineering | Python Full Stack | MS CS (UTA)
+**Anand Manohar Agnihotram**  
+AI Application Engineer | Python Full-Stack Developer  
+MS in Computer Science — University of Texas at Arlington
+
+This project represents my ability to design and build **end-to-end AI agents** that integrate LLMs into real workflows with reliability, structure, and cost awareness.
+
+> Sabaki is a personal AI agent I actively use — and a foundation for building scalable, production-ready AI automation systems.
