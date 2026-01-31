@@ -13,6 +13,7 @@ class EmailMeta:
     date: str
     snippet: str
     label_ids: list[str]
+    full: Dict[str, Any]
 
 
 def _get_header(headers: List[Dict[str, str]], name: str) -> str:
@@ -57,6 +58,7 @@ def fetch_recent_email_meta(service, max_results: int = 10) -> list[EmailMeta]:
                 date=_get_header(headers, "Date"),
                 snippet=full.get("snippet", "") or "",
                 label_ids=full.get("labelIds", []) or [],
+                full=full,
             )
         )
 

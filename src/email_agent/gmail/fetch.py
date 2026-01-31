@@ -14,6 +14,7 @@ class SimpleEmail:
     date: str
     snippet: str
     body_text: str
+    label_ids: list[str]
 
 
 def _get_header(headers: List[Dict[str, str]], name: str) -> str:
@@ -88,6 +89,7 @@ def fetch_recent_emails(service, max_results: int = 5) -> list[SimpleEmail]:
                 date=_get_header(headers, "Date"),
                 snippet=full.get("snippet", "") or "",
                 body_text=_extract_text_from_payload(payload).strip(),
+                label_ids=full.get("labelIds", []) or [],
             )
         )
 
