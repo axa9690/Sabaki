@@ -3,7 +3,7 @@
 An AI-powered Gmail agent that **auto-labels job-application emails** into clear stages (APPLIED, ASSESSMENTS, IN_PROCESS, INTERVIEWS, REJECTED, OTP_SECURITY, etc.).  
 Built with **Python**, **Gmail API (OAuth)**, **rule-based short-circuiting**, and **LLM + Pydantic validation** (Ollama local for v1).
 
-<img width="1022" height="844" alt="Sabaki works like a personal assistant for my job inbox  - visual selection" src="https://github.com/user-attachments/assets/feffac4e-dd99-409e-bdd9-8fdcc6649f39" />
+<img width="2752" height="1536" alt="Gemini_Generated_Image_pa2e7npa2e7npa2e" src="https://github.com/user-attachments/assets/6904a49a-b5a3-418a-8f69-3e046b76b350" />
 
 
 ---
@@ -68,6 +68,8 @@ This is not a toy script or a simple API wrapper — it is designed as a **real 
 7. Validate LLM output using Pydantic schema
 8. Apply Gmail label + PROCESSED
 9. Mark emails as read for APPLIED / REJECTED
+
+<img width="1022" height="844" alt="Sabaki works like a personal assistant for my job inbox  - visual selection" src="https://github.com/user-attachments/assets/feffac4e-dd99-409e-bdd9-8fdcc6649f39" />
 
 ---
 
