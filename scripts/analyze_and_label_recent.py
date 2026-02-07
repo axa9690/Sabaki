@@ -82,7 +82,7 @@ def debug_others(email, combined_text):
 
 
 def main():
-    max_emails = int(os.getenv("MAX_EMAILS", "100"))
+    max_emails = int(os.getenv("MAX_EMAILS", "50"))
 
     service = build_gmail_service()
 
