@@ -64,7 +64,7 @@ def fetch_recent_emails(service, max_results: int = 5) -> list[SimpleEmail]:
     """
     Fetch recent messages and return a clean, minimal representation.
     """
-    resp = service.users().messages().list(userId="me", maxResults=max_results).execute()
+    resp = service.users().messages().list(userId="me", maxResults=max_results,labelIds="UNREAD").execute()
     messages = resp.get("messages", []) or []
 
     results: list[SimpleEmail] = []

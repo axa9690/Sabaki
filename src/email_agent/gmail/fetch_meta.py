@@ -28,7 +28,7 @@ def fetch_recent_email_meta(service, max_results: int = 10) -> list[EmailMeta]:
     """
     Fast: list IDs -> get METADATA only (no body).
     """
-    resp = service.users().messages().list(userId="me", maxResults=max_results).execute()
+    resp = service.users().messages().list(userId="me", maxResults=max_results, labelIds="UNREAD").execute()
     messages = resp.get("messages", []) or []
 
     out: list[EmailMeta] = []
