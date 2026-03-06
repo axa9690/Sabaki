@@ -130,7 +130,7 @@ def debug_others(email, combined_text):
 
 
 def main():
-    max_emails = 500
+    max_emails = 50
 
     service = build_gmail_service()
 

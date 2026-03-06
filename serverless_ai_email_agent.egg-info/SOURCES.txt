@@ -1,0 +1,10 @@
+README.md
+pyproject.toml
+email_agent/__init__.py
+email_agent/app.py
+email_agent/config.py
+email_agent/schemas.py
+serverless_ai_email_agent.egg-info/PKG-INFO
+serverless_ai_email_agent.egg-info/SOURCES.txt
+serverless_ai_email_agent.egg-info/dependency_links.txt
+serverless_ai_email_agent.egg-info/top_level.txt
