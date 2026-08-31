@@ -1,126 +1,38 @@
-from __future__ import annotations
+"""LLM fallback stage of the pipeline.
 
-import json
-from typing import Optional
-
-from email_agent.schemas import EmailAnalysis
-from email_agent.llm.ollama_client import OllamaClient
-from email_agent.text.normalize import normalize_email_text 
-
-SYSTEM_PROMPT = """You are an AI email assistant for a job-application inbox.
-You MUST output ONLY valid JSON. No markdown. No extra text.
-
-You MUST choose "label" from EXACTLY this list (case-sensitive):
-APPLIED
-ASSESSMENTS
-IN PROCESS
-INTERVIEWS
-REJECTED
-OTP_SECURITY
-RECOMMENDATIONS
-JOB_ALERTS
-ADVERTISEMENTS
-OTHERS
-
-Important:
-- Choose OTHERS when you cannot confidently map to a job pipeline label
-  or the email is unrelated to job search.
-
-You MUST choose "urgency" from EXACTLY this list:
-low
-medium
-high
-
-Schema (return EXACTLY these keys, no more, no less):
-{
-  "label": "<ONE of the allowed label strings>",
-  "urgency": "<low|medium|high>",
-  "reasoning_brief": "<1 short sentence>",
-  "needs_reply": boolean
-}
-
-Rules:
-- Output JSON only.
-- Use ONLY the key "label" (never "category").
-- Never invent new labels.
-- Keep reasoning_brief to 1 sentence.
+Only reached when :mod:`email_agent.pipeline.rules` cannot classify an email.
 """
 
+from __future__ import annotations
 
-def _safe_json_extract(text: str) -> Optional[dict]:
-    """
-    Tries to parse JSON strictly; if the model adds extra text,
-    extract the first {...} block and parse that.
-    """
-    text = text.strip()
-    try:
-        return json.loads(text)
-    except Exception:
-        pass
+from email_agent.llm.base import EmailContext, LLMProvider
+from email_agent.schemas import EmailAnalysis
+from email_agent.text.normalize import normalize_email_text
 
-    # best-effort extraction
-    start = text.find("{")
-    end = text.rfind("}")
-    if start != -1 and end != -1 and end > start:
-        candidate = text[start : end + 1]
-        try:
-            return json.loads(candidate)
-        except Exception:
-            return None
-    return None
+# Cap prompt size to keep latency and token usage low.
+MAX_PROMPT_CHARS = 4000
 
 
-def analyze_email_with_ollama(
+def analyze_email_with_llm(
     *,
+    provider: LLMProvider,
     subject: str,
     from_email: str,
     date: str,
-    snippet: str,
-    client: OllamaClient,
-    max_retries: int = 2,
+    text: str,
+    max_chars: int = MAX_PROMPT_CHARS,
 ) -> EmailAnalysis:
-    
-    # ✅ Normalize + cap before sending to LLM
+    """Normalise the email, then classify it with the configured provider."""
     normalized = normalize_email_text(
         subject=subject,
-        snippet=snippet,
-        max_chars=6000,
+        snippet=text,
+        max_chars=max_chars,
     )
-
-    user_prompt = f"""Classify this email for a job-application inbox.
-
-From: {from_email}
-Date: {date}
-Subject: {subject}
-Snippet: {normalized}
-
-Return ONLY JSON with EXACT keys: label, urgency, reasoning_brief, needs_reply.
-The key must be "label" (NOT category).
-Example:
-{{"label":"APPLIED","urgency":"low","reasoning_brief":"Application confirmation.","needs_reply":false}}
-"""
-
-
-    last_err = None
-
-    for attempt in range(max_retries + 1):
-        raw = client.chat(system=SYSTEM_PROMPT, user=user_prompt, temperature=0.2)
-
-        obj = _safe_json_extract(raw)
-        if obj is None:
-            last_err = f"Could not parse JSON. Raw output:\n{raw[:500]}"
-        else:
-            try:
-                return EmailAnalysis.model_validate(obj)
-            except Exception as e:
-                last_err = f"Pydantic validation failed: {e}. Raw JSON: {obj}"
-
-        # Retry by telling the model exactly what failed
-        user_prompt = (
-            user_prompt
-            + "\n\nYour previous output was invalid.\n"
-            + f"Error: {last_err}\n"
-            + "Return ONLY corrected JSON matching the schema."
+    return provider.analyze_email(
+        EmailContext(
+            from_email=from_email,
+            subject=subject,
+            date=date,
+            text=normalized,
         )
-
-    raise ValueError(f"Failed to produce valid EmailAnalysis after retries. Last error: {last_err}")
+    )

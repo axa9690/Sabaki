@@ -1,7 +1,9 @@
 # Sabaki — AI Job Inbox Labeling Agent (Gmail + LLM)
 
 An AI-powered Gmail agent that **auto-labels job-application emails** into clear stages (APPLIED, ASSESSMENTS, IN_PROCESS, INTERVIEWS, REJECTED, OTP_SECURITY, etc.).  
-Built with **Python**, **Gmail API (OAuth)**, **rule-based short-circuiting**, and **LLM + Pydantic validation** (Ollama local for v1).
+Built with **Python**, **Gmail API (OAuth)**, **rule-based short-circuiting**, and **LLM + Pydantic validation**.
+
+**v2 uses [Groq](https://console.groq.com) (`llama-3.1-8b-instant`) as the default LLM provider**, behind a small provider abstraction, so the agent can run as a lightweight cloud application. Local Ollama remains available with `LLM_PROVIDER=ollama`.
 
 <img width="2752" height="1536" alt="Gemini_Generated_Image_pa2e7npa2e7npa2e" src="https://github.com/user-attachments/assets/6904a49a-b5a3-418a-8f69-3e046b76b350" />
 
@@ -44,7 +46,7 @@ This is not a toy script or a simple API wrapper — it is designed as a **real 
 
 ### ✅ Smart behavior
 - **Rule short-circuit** for obvious patterns (fast + saves LLM calls)
-- **LLM fallback** (Ollama) for ambiguous emails
+- **LLM fallback** (Groq by default, Ollama optional) for ambiguous emails
 - **Schema validation** using Pydantic (no random outputs)
 - **Skip already processed emails** using a `PROCESSED` label
 - **Mark as read** automatically for `APPLIED` and `REJECTED`
@@ -87,12 +89,55 @@ Sabaki is built with the mindset of a production AI system:
 
 ## Tech Stack
 
-- Python 3.11
+- Python 3.11+
 - Gmail API (OAuth 2.0)
-- Ollama (local LLM inference for v1)
+- Groq API (`llama-3.1-8b-instant`) via the official `groq` SDK, JSON mode
+- Ollama (optional local LLM inference)
 - Pydantic (structured output validation)
 - Regex-based rules engine
-- Docker-ready architecture (for future AWS Lambda deployment)
+- FastAPI (`/health`, `/run`) for cloud deployment
+
+---
+
+## Project Layout
+
+```
+email_agent/
+    config.py              # env-driven settings (no hardcoded secrets)
+    schemas.py             # EmailAnalysis / JobLabel / Urgency
+    app.py                 # FastAPI entrypoint (/health, /run)
+    gmail/                 # Gmail concerns only (auth, fetch, labels)
+    llm/
+        base.py            # provider interface + JSON parsing, validation, retries
+        prompts.py         # centralised prompts
+        groq_provider.py   # Groq (default)
+        ollama_provider.py # local compatibility mode
+        ollama_client.py   # low-level Ollama HTTP client
+        factory.py         # LLM_PROVIDER -> provider
+    pipeline/
+        rules.py           # deterministic classification rules (first layer)
+        analyzer.py        # LLM fallback stage
+        runner.py          # analyse-and-label workflow
+    text/normalize.py      # HTML -> text normalisation
+tests/                     # mocked LLM + rules + workflow tests
+```
+
+---
+
+## Configuration
+
+Copy `.env.example` to `.env` (gitignored) and set at least:
+
+```dotenv
+LLM_PROVIDER=groq
+LLM_MODEL=llama-3.1-8b-instant
+GROQ_API_KEY=your_groq_api_key
+```
+
+Optional knobs: `LLM_TEMPERATURE`, `LLM_MAX_OUTPUT_TOKENS`, `LLM_TIMEOUT_S`,
+`LLM_MAX_RETRIES`, `LLM_RETRY_BACKOFF_S`, `GROQ_BASE_URL`, `MAX_EMAILS`,
+`RUN_API_KEY`, `GMAIL_TOKEN_PATH`, `GMAIL_CLIENT_SECRET_PATH`, `GMAIL_TOKEN_JSON`,
+`OLLAMA_BASE_URL`, `OLLAMA_MODEL`, `OLLAMA_TIMEOUT_S`.
 
 ---
 
@@ -105,7 +150,8 @@ python -m venv .venv
 
 ### 2) Install Dependencies
 ```powershell
-pip install -r requirements
+pip install -r requirements.txt        # runtime
+pip install -r requirements-dev.txt    # runtime + pytest
 ```
 
 ### 3) Gmail OAuth setup
@@ -127,27 +173,42 @@ python scripts/gmail_profile_test.py
 
 ## Run the Agent
 ```
-$env:PYTHONPATH="src"
+$env:PYTHONPATH="."
 python scripts/analyze_and_label_recent.py
 ```
 
 Expected output:
  - Labels applied with the reason (rule vs LLM)
- - Summary with checked/labeled/skipped counts
+ - Summary with checked/labeled/skipped/failed counts, plus rules vs LLM call counts
+
+Run it as an HTTP service instead:
+```
+uvicorn email_agent.app:app --reload
+curl http://127.0.0.1:8000/health
+curl -X POST http://127.0.0.1:8000/run -H "X-API-Key: $RUN_API_KEY"
+```
+
+## Tests
+No test contacts the real Groq API; every LLM response is mocked.
+```
+pytest -q
+```
 
 ## Configuration Notes
- - You can tune max emails / rules / labels inside the script and pipeline.
- - For speed + cost reduction, rule short-circuit runs before LLM.
+ - `MAX_EMAILS` controls how many recent emails are inspected per run.
+ - For speed + cost reduction, rule short-circuit runs before the LLM.
+ - LLM output is always parsed as JSON and validated with Pydantic; malformed
+   output and transient provider errors are retried (`LLM_MAX_RETRIES`).
 
 ## Safety
  - This project never commits secrets (tokens, OAuth client JSON, API keys).
  - Use a dedicated Gmail account for job applications (recommended).
 
 ## Roadmap
-### v2 (production/serverless)
- - Gemini support (hosted model for deployment)
- - AWS Lambda deployment via Docker container image
- - Scheduled runs (EventBridge) or webhook-based trigger
+### v2 (in progress)
+ - ✅ Cloud LLM provider (Groq `llama-3.1-8b-instant`) behind a provider abstraction
+ - ✅ Environment-driven configuration + mocked test suite
+ - Container image + scheduled cloud deployment
  - Multi-account label mappings
  - Batch classification to reduce latency + cost
 
