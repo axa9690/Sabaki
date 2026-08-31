@@ -9,6 +9,7 @@ python-dotenv==1.0.1
 rich==13.7.1
 httpx==0.27.2
 
-fastapi
-uvicorn
-google-genai
+groq==1.7.0
+
+fastapi==0.115.6
+uvicorn==0.34.0
