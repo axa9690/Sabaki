@@ -1,81 +1,65 @@
+"""HTTP entrypoint for running the agent as a small cloud application."""
+
 from __future__ import annotations
 
 import json
-import os
-from fastapi import FastAPI, Header, HTTPException
+import logging
 
+from fastapi import FastAPI, Header, HTTPException
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 
-from email_agent.gmail.fetch_meta import fetch_recent_email_meta
-from email_agent.gmail.labels import ensure_label
-from email_agent.pipeline.label_router import label_for_category, processed_label
-from email_agent.llm.gemini_client import analyze_with_gemini
+from email_agent.config import settings
+from email_agent.gmail.service import SCOPES
+from email_agent.llm.factory import create_provider
+from email_agent.pipeline.runner import run_agent
 
-app = FastAPI()
+logger = logging.getLogger(__name__)
 
-SCOPES = [
-    "https://www.googleapis.com/auth/gmail.readonly",
-    "https://www.googleapis.com/auth/gmail.modify",
-]
+app = FastAPI(title="Sabaki AI Email Agent")
 
-def _env(name: str) -> str:
-    v = os.getenv(name)
-    if not v:
-        raise RuntimeError(f"Missing env var: {name}")
-    return v
+
+def _build_service():
+    """Gmail client from GMAIL_TOKEN_JSON (cloud) or the local token file."""
+    if settings.gmail_token_json:
+        token_info = json.loads(settings.gmail_token_json)
+        creds = Credentials.from_authorized_user_info(token_info, SCOPES)
+        return build("gmail", "v1", credentials=creds, cache_discovery=False)
+
+    from email_agent.gmail.service import build_gmail_service
+
+    return build_gmail_service()
+
 
 @app.get("/health")
-def health():
-    return {"ok": True}
+def health() -> dict[str, object]:
+    return {
+        "ok": True,
+        "provider": settings.llm_provider,
+        "model": settings.llm_model,
+    }
+
 
 @app.post("/run")
-def run_agent(x_api_key: str | None = Header(default=None)):
-    # Simple protection so strangers can't hit your endpoint
-    expected = os.getenv("RUN_API_KEY")
-    if expected and x_api_key != expected:
+def run(x_api_key: str | None = Header(default=None)) -> dict[str, object]:
+    if settings.run_api_key and x_api_key != settings.run_api_key:
         raise HTTPException(status_code=401, detail="Unauthorized")
 
-    gemini_api_key = _env("GEMINI_API_KEY")
-    gmail_token_json = _env("GMAIL_TOKEN_JSON")
+    try:
+        provider = create_provider()
+        provider.warmup()
+        service = _build_service()
+    except Exception as exc:
+        logger.error("startup failed: %s", exc)
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
 
-    model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
-    max_emails = int(os.getenv("MAX_EMAILS", "5"))
+    stats = run_agent(
+        service=service, provider=provider, max_emails=settings.max_emails
+    )
 
-    token_info = json.loads(gmail_token_json)
-
-    creds = Credentials.from_authorized_user_info(token_info, SCOPES)
-    service = build("gmail", "v1", credentials=creds, cache_discovery=False)
-
-    processed_id = ensure_label(service, processed_label())
-    emails = fetch_recent_email_meta(service, max_results=max_emails)
-
-    labeled = 0
-    skipped = 0
-
-    for e in emails:
-        if processed_id in e.label_ids:
-            skipped += 1
-            continue
-
-        analysis = analyze_with_gemini(
-            api_key=gemini_api_key,
-            model=model,
-            from_email=e.from_email,
-            subject=e.subject,
-            date=e.date,
-            snippet=e.snippet,
-        )
-
-        cat_label_name = label_for_category(analysis.category)
-        cat_id = ensure_label(service, cat_label_name)
-
-        service.users().messages().modify(
-            userId="me",
-            id=e.message_id,
-            body={"addLabelIds": [cat_id, processed_id], "removeLabelIds": []},
-        ).execute()
-
-        labeled += 1
-
-    return {"ok": True, "checked": len(emails), "labeled": labeled, "skipped": skipped, "model": model}
+    return {
+        "ok": True,
+        "provider": provider.name,
+        "model": provider.model,
+        **stats.as_dict(),
+    }
